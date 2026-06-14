@@ -179,8 +179,87 @@ public:
 Blockchain* Blockchain::instancia = nullptr;
 
 
+class MesaElectoralObserver {
+public:
+    virtual void update(const Block& nuevoBloque) = 0;
+
+    virtual ~MesaElectoralObserver() = default;
+};
+
+class MesaElectoral : public MesaElectoralObserver {
+
+private:
+    string nombre;
+    vector<Block> copiaLocal;
+
+public:
+
+    MesaElectoral(const string& nombre): nombre(nombre) {}
+
+    void update(const Block& nuevoBloque) override {
+        if(nuevoBloque.current_hash ==
+           nuevoBloque.crearHash())
+        {
+            copiaLocal.push_back(
+                nuevoBloque
+            );
+
+            cout << "[" << nombre
+                 << "] Bloque agregado. "
+                 << "Total bloques: "
+                 << copiaLocal.size()
+                 << endl;
+        }
+    }
+
+};
+
+class CentroElectoralSubject {
+
+private:
+
+    vector<MesaElectoralObserver*> mesas;
+
+public:
+
+    void attach(MesaElectoralObserver* mesa)
+    {
+        mesas.push_back(mesa);
+    }
+
+    void notificarNuevoBloque(
+        const Block& bloque)
+    {
+        cout << "\n================================";
+        cout << "\nCENTRO ELECTORAL";
+        cout << "\nNuevo bloque detectado";
+        cout << "\nNotificando mesas...";
+        cout << "\n================================\n";
+
+        for(auto mesa : mesas)
+        {
+            mesa->update(bloque);
+        }
+    }
+};
+
 int main()
 {
+    CentroElectoralSubject centro;
+
+    MesaElectoral mesaA("Mesa A");
+
+    MesaElectoral mesaB("Mesa B");
+
+    MesaElectoral mesaC("Mesa C");
+
+    centro.attach(&mesaA);
+    centro.attach(&mesaB);
+    centro.attach(&mesaC);
+
+
+
+
     Blockchain& blockchain =
         Blockchain::getInstance();
 
@@ -200,15 +279,11 @@ int main()
         )
     );
 
-    Block bloque1(
-        0,
-        "0",
-        votosBloque1
-    );
+    Block bloque1(0, "0", votosBloque1);
 
-    blockchain.addBlock(
-        bloque1
-    );
+    blockchain.addBlock(bloque1);
+
+    centro.notificarNuevoBloque(blockchain.getChain().back());
 
     vector<Vote> votosBloque2;
 
@@ -226,17 +301,30 @@ int main()
         )
     );
 
-    Block bloque2(
-        1,
-        "",
-        votosBloque2
-    );
+    Block bloque2(1,"",votosBloque2);
 
-    blockchain.addBlock(
-        bloque2
-    );
+    blockchain.addBlock(bloque2);
 
-    cout << "\n=========== CADENA ===========\n";
+    centro.notificarNuevoBloque(blockchain.getChain().back());
+    
+
+    vector<Vote> votosBloque3;
+
+    votosBloque3.push_back(Vote("id_05_hash", "Candidato A"));
+
+    votosBloque3.push_back(Vote("id_06_hash", "Candidato B"));
+
+    Block bloque3(2,"",votosBloque3);
+
+    cout << "\nMesa A mina un nuevo bloque...\n";
+
+    blockchain.addBlock(bloque3);
+
+    centro.notificarNuevoBloque(
+        blockchain.getChain().back()
+    );
+    
+        cout << "\n=========== CADENA ===========\n";
 
     for(const auto& block :
         blockchain.getChain())
@@ -268,6 +356,9 @@ int main()
     {
         cout << "\nLa cadena fue ALTERADA\n";
     }
+    
+
+
 
     return 0;
 }
