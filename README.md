@@ -5,4 +5,4 @@ Integrantes:
 
 -Axel Roberth Portal Ruiz
 
-La entrega del integrante 3 es el archivo que se debe evaluar (última versión)
+La entrega del archivo integrante3.cpp, es el archivo que se debe evaluar, pues es la última versión.
